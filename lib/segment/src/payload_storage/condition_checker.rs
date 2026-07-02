@@ -590,4 +590,56 @@ mod tests {
         assert!(is_not_null.check(&number));
         assert!(is_not_null.check(&bool));
     }
+
+    #[test]
+    fn test_number_to_integer() {
+        // Integer values pass through unchanged
+        assert_eq!(super::number_to_integer(&json!(42).as_number().unwrap()), Some(42));
+        assert_eq!(super::number_to_integer(&json!(0).as_number().unwrap()), Some(0));
+        assert_eq!(
+            super::number_to_integer(&json!(-5).as_number().unwrap()),
+            Some(-5)
+        );
+
+        // Float values that are whole numbers get converted
+        assert_eq!(
+            super::number_to_integer(&json!(42.0).as_number().unwrap()),
+            Some(42)
+        );
+        assert_eq!(
+            super::number_to_integer(&json!(-10.0).as_number().unwrap()),
+            Some(-10)
+        );
+
+        // Float values that are NOT whole numbers return None
+        assert_eq!(
+            super::number_to_integer(&json!(42.5).as_number().unwrap()),
+            None
+        );
+        assert_eq!(
+            super::number_to_integer(&json!(-3.14).as_number().unwrap()),
+            None
+        );
+
+        // Values outside i64 range are rejected (not saturated)
+        let beyond_max = (i64::MAX as f64) + 1.0;
+        assert_eq!(
+            super::number_to_integer(&json!(beyond_max).as_number().unwrap()),
+            None
+        );
+
+        // Value exactly at i64::MAX is accepted
+        let at_max = i64::MAX as f64;
+        assert_eq!(
+            super::number_to_integer(&json!(at_max).as_number().unwrap()),
+            Some(i64::MAX)
+        );
+
+        // Value at i64::MIN is accepted
+        let at_min = i64::MIN as f64;
+        assert_eq!(
+            super::number_to_integer(&json!(at_min).as_number().unwrap()),
+            Some(i64::MIN)
+        );
+    }
 }
